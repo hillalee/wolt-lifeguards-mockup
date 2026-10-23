@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>וולט למצילים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=Karantina:wght@700&display=swap" rel="stylesheet">
+<style>
+/* hallmark v2.0.0 | deal: manual, custom direction "pool water" (by request) | scope: app screen | signature: the water level rises and turns green as the order gets closer */
+/* critique: status is carried by water colour AND level AND one big word, so it reads from the corner of the eye; white plates float on the water for the controls; one display face only for status words and minutes */
+
+:root {
+  --page: oklch(95.5% 0.012 220);
+  --page-fg: oklch(21% 0.035 245);
+  --page-fg-2: oklch(40% 0.03 245);
+  --deck: oklch(98.5% 0.004 220);
+  --grout: oklch(91% 0.012 220);
+  --plate: oklch(99.5% 0.002 220);
+  --ink: oklch(21% 0.035 245);
+  --ink-2: oklch(40% 0.03 245);
+  --on-dark: oklch(99% 0.003 220);
+  --band: oklch(50% 0.13 245);
+  --band-2: oklch(62% 0.12 225);
+  --grid: oklch(35% 0.08 240 / 0.22);
+  --lane: oklch(30% 0.09 250 / 0.3);
+
+  --aqua-1: oklch(87% 0.085 205);
+  --aqua-2: oklch(64% 0.12 230);
+  --amber-1: oklch(92% 0.12 92);
+  --amber-2: oklch(80% 0.16 75);
+  --orange-1: oklch(88% 0.12 68);
+  --orange-2: oklch(72% 0.17 50);
+  --green-1: oklch(91% 0.15 150);
+  --green-2: oklch(70% 0.17 152);
+  --red-1: oklch(60% 0.21 27);
+  --red-2: oklch(47% 0.19 25);
+
+  --font-body: "Heebo", system-ui, sans-serif;
+  --font-display: "Karantina", "Heebo", sans-serif;
+
+  --radius-phone: 44px;
+  --radius-plate: 22px;
+  --dur-micro: 120ms;
+}
+
+/* only the page around the phones follows the viewer's theme; the phones keep the pool look */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: oklch(20% 0.03 240);
+    --page-fg: oklch(95% 0.01 220);
+    --page-fg-2: oklch(78% 0.02 220);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: oklch(20% 0.03 240);
+  --page-fg: oklch(95% 0.01 220);
+  --page-fg-2: oklch(78% 0.02 220);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { overflow-x: clip; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--page-fg);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.45;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+.page {
+  max-width: 1240px; margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.page > h1 { font-size: 28px; font-weight: 800; margin: 0 0 4px; }
+.page > p { margin: 0 0 32px; color: var(--page-fg-2); max-width: 60ch; }
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
+  gap: 48px 32px;
+  justify-items: center;
+}
+figure { margin: 0; width: min(360px, 100%); }
+figcaption { margin-top: 14px; }
+figcaption h2 { font-size: 18px; font-weight: 700; margin: 0; }
+figcaption p { margin: 2px 0 0; font-size: 15px; color: var(--page-fg-2); }
+
+/* phone */
+.phone {
+  position: relative;
+  height: 760px;
+  border-radius: var(--radius-phone);
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow: 0 1px 0 oklch(100% 0 0 / 0.6) inset, 0 24px 48px -24px oklch(30% 0.08 240 / 0.45);
+  --ui: var(--ink);
+  --ui-2: var(--ink-2);
+}
+.phone[data-tone="dark"] { --ui: var(--on-dark); --ui-2: var(--on-dark); }
+
+/* pool background */
+.pool { position: absolute; inset: 0; z-index: -1; }
+.deck {
+  position: absolute; inset: 0;
+  background-color: var(--deck);
+  background-image:
+    linear-gradient(var(--grout) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grout) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.water {
+  position: absolute; inset: 0;
+  transform: translateY(calc((100 - var(--level, 62)) * 1%));
+  will-change: transform;
+}
+.tint { position: absolute; inset: 0; opacity: 0; }
+.t-aqua   { background: linear-gradient(var(--aqua-1), var(--aqua-2)); opacity: 1; }
+.t-amber  { background: linear-gradient(var(--amber-1), var(--amber-2)); }
+.t-orange { background: linear-gradient(var(--orange-1), var(--orange-2)); }
+.t-green  { background: linear-gradient(var(--green-1), var(--green-2)); }
+.t-red    { background: linear-gradient(var(--red-1), var(--red-2)); }
+.phone[data-tint="amber"]  .t-amber,
+.phone[data-tint="orange"] .t-orange,
+.phone[data-tint="green"]  .t-green,
+.phone[data-tint="red"]    .t-red { opacity: 1; }
+
+.floor {
+  position: absolute; inset: 14px -20px -20px;
+  background-image:
+    linear-gradient(var(--grid) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, var(--grid) 1.5px, transparent 1.5px);
+  background-size: 36px 36px;
+  filter: url(#wobble);
+}
+.lane {
+  position: absolute; top: 18%; bottom: 0; left: 16%;
+  width: 18px; background: var(--lane);
+}
+.lane::after {
+  content: ""; position: absolute; top: 0; left: -20px;
+  width: 58px; height: 18px; background: var(--lane);
+}
+.caustics {
+  position: absolute; top: -30%; left: -30%; width: 160%; height: 160%;
+  will-change: transform;
+}
+.c1 { filter: url(#caustic-a); opacity: 0.42; }
+.c2 { filter: url(#caustic-b); opacity: 0.26; }
+.band {
+  position: absolute; top: 0; left: 0; right: 0; height: 14px;
+  background:
+    linear-gradient(transparent 6px, var(--band-2) 6px, var(--band-2) 7px, transparent 7px),
+    repeating-linear-gradient(90deg, var(--band) 0 12px, var(--band-2) 12px 14px);
+}
+.surface {
+  position: absolute; top: -9px; left: 0; width: 200%; height: 18px;
+  will-change: transform;
+}
+.surface path { fill: none; stroke: oklch(100% 0 0 / 0.85); stroke-width: 2.5; }
+
+/* views */
+.view {
+  position: relative;
+  height: 100%;
+  display: flex; flex-direction: column;
+  padding: 22px 20px 22px;
+  color: var(--ui);
+}
+.view[hidden] { display: none; }
+
+.deck-bar { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.who { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.2; }
+.where { margin: 0; font-size: 15px; color: var(--ui-2); }
+.tokens {
+  margin: 0; display: inline-flex; align-items: center; gap: 6px;
+  background: var(--plate); color: var(--ink);
+  border-radius: 999px; padding: 6px 14px 6px 12px;
+  font-size: 15px; font-weight: 500;
+  box-shadow: 0 0 0 1.5px var(--grout);
+}
+.tokens b { font-size: 18px; font-weight: 800; }
+.tokens svg { width: 18px; height: 18px; }
+
+.ask { font-family: var(--font-display); font-weight: 700; font-size: 64px; line-height: 0.95; margin: 26px 0 18px; }
+
+.favs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.fav {
+  min-height: 118px;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--plate); color: var(--ink);
+  border: 0; border-radius: var(--radius-plate);
+  box-shadow: 0 10px 20px -14px oklch(25% 0.08 240 / 0.7);
+  cursor: pointer; text-align: start;
+  transition: transform var(--dur-micro) ease-out;
+}
+.fav svg { width: 30px; height: 30px; stroke-width: 2.2; color: var(--band); }
+.fav-name { font-size: 20px; font-weight: 800; line-height: 1.15; }
+.fav-cost { font-size: 14px; color: var(--ink-2); }
+.fav:hover { box-shadow: 0 0 0 2px var(--band), 0 10px 20px -14px oklch(25% 0.08 240 / 0.7); }
+.fav:active, .cat:active, .break:active, .primary:active, .secondary:active { transform: scale(0.97); }
+
+.cats { display: flex; gap: 8px; margin-top: 14px; }
+.cat {
+  flex: 1; min-height: 44px; border: 0; border-radius: 999px;
+  background: oklch(100% 0 0 / 0.7); color: var(--ink);
+  font-size: 15px; font-weight: 500; cursor: pointer;
+  transition: transform var(--dur-micro) ease-out;
+}
+.cat:hover { background: var(--plate); }
+
+.break {
+  margin-top: auto;
+  display: flex; align-items: center; gap: 14px;
+  min-height: 76px; padding: 12px 20px;
+  border: 0; border-radius: var(--radius-plate);
+  background: var(--ink); color: var(--on-dark);
+  cursor: pointer; text-align: start;
+  transition: transform var(--dur-micro) ease-out;
+}
+.break svg { width: 30px; height: 30px; flex: none; }
+.break b { display: block; font-size: 20px; font-weight: 800; }
+.break small { display: block; font-size: 14px; opacity: 0.8; }
+.break:hover { background: var(--ink-2); }
+
+.status { margin-top: auto; margin-bottom: auto; padding-top: 12px; }
+.status-icon svg { width: 56px; height: 56px; stroke-width: 2.4; }
+.status-icon.huge svg { width: 132px; height: 132px; stroke-width: 3; }
+.status-word { font-family: var(--font-display); font-weight: 700; font-size: 72px; line-height: 0.92; margin: 10px 0 8px; }
+.status-word.long { font-size: 58px; }
+.status-line { margin: 0; font-size: 19px; font-weight: 500; max-width: 26ch; }
+.minutes { display: flex; align-items: baseline; gap: 10px; margin: 6px 0 0; }
+.minutes b { font-family: var(--font-display); font-weight: 700; font-size: 132px; line-height: 0.8; font-variant-numeric: tabular-nums; }
+.minutes span { font-size: 22px; font-weight: 700; }
+
+.steps {
+  list-style: none; margin: 0 0 16px; padding: 10px;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;
+  background: oklch(100% 0 0 / 0.78); border-radius: 18px; color: var(--ink);
+  backdrop-filter: blur(8px);
+}
+.steps li {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  font-size: 14px; font-weight: 500; color: var(--ink-2); text-align: center;
+}
+.steps svg { width: 24px; height: 24px; stroke-width: 2.4; }
+.steps li.done { color: var(--ink); font-weight: 700; }
+.steps li.now { color: var(--ink); font-weight: 800; }
+
+.primary, .secondary {
+  min-height: 60px; width: 100%;
+  border: 0; border-radius: var(--radius-plate);
+  font-size: 19px; font-weight: 800; cursor: pointer;
+  transition: transform var(--dur-micro) ease-out;
+}
+.primary { background: var(--ink); color: var(--on-dark); }
+.secondary { background: oklch(100% 0 0 / 0.78); color: var(--ink); backdrop-filter: blur(8px); }
+.phone[data-tone="dark"] .primary { background: var(--plate); color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fav, .cat, .break, .primary, .secondary { transition: none; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="caustic-a" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="turbulence" baseFrequency="0.016 0.022" numOctaves="2" seed="7"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -3.2 0 0 0 1.12"/>
+    <feGaussianBlur stdDeviation="0.6"/>
+  </filter>
+  <filter id="caustic-b" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="turbulence" baseFrequency="0.028 0.034" numOctaves="1" seed="21"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -3.6 0 0 0 1.1"/>
+    <feGaussianBlur stdDeviation="0.5"/>
+  </filter>
+  <filter id="wobble">
+    <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="3" result="noise"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="14" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<template id="pool">
+  <div class="pool" aria-hidden="true">
+    <div class="deck"></div>
+    <div class="water">
+      <div class="tint t-aqua"></div>
+      <div class="tint t-amber"></div>
+      <div class="tint t-orange"></div>
+      <div class="tint t-green"></div>
+      <div class="tint t-red"></div>
+      <div class="floor"><div class="lane"></div></div>
+      <div class="caustics c1"></div>
+      <div class="caustics c2"></div>
+      <div class="band"></div>
+      <svg class="surface" viewBox="0 0 800 18" preserveAspectRatio="none"><path d="M0 9 Q25 3 50 9 T100 9 T150 9 T200 9 T250 9 T300 9 T350 9 T400 9 T450 9 T500 9 T550 9 T600 9 T650 9 T700 9 T750 9 T800 9"/></svg>
+    </div>
+  </div>
+</template>
+
+<template id="views">
+  <div class="view" data-view="home">
+    <header class="deck-bar">
+      <div><p class="who">היי אורי</p><p class="where">עמדה 2, בריכה גדולה</p></div>
+      <p class="tokens"><i data-lucide="coins"></i><b>6</b> טוקנים</p>
+    </header>
+    <h3 class="ask">מה חסר לך?</h3>
+    <div class="favs">
+      <button class="fav" data-go="order" data-item="מים קרים"><i data-lucide="droplet"></i><span><span class="fav-name">מים קרים</span><br><span class="fav-cost">חינם</span></span></button>
+      <button class="fav" data-go="order" data-item="ארטיק"><i data-lucide="ice-cream-cone"></i><span><span class="fav-name">ארטיק</span><br><span class="fav-cost">טוקן אחד</span></span></button>
+      <button class="fav" data-go="order" data-item="קפה קר" data-outcome="declined"><i data-lucide="coffee"></i><span><span class="fav-name">קפה קר</span><br><span class="fav-cost">2 טוקנים</span></span></button>
+      <button class="fav" data-go="order" data-item="קרם הגנה"><i data-lucide="sun"></i><span><span class="fav-name">קרם הגנה</span><br><span class="fav-cost">חינם</span></span></button>
+    </div>
+    <nav class="cats" aria-label="קטגוריות">
+      <button class="cat">אוכל ושתייה</button>
+      <button class="cat">שמש</button>
+      <button class="cat">ציוד</button>
+    </nav>
+    <button class="break" data-go="break"><i data-lucide="repeat-2"></i><span><b>הפסקה של 5 דקות</b><small>מישהו יבוא להחליף אותך</small></span></button>
+  </div>
+
+  <div class="view" data-view="pending" hidden>
+    <header class="deck-bar">
+      <div><p class="who">ההזמנה שלך</p><p class="where item-name">מים קרים</p></div>
+    </header>
+    <div class="status">
+      <span class="status-icon"><i data-lucide="clock-3"></i></span>
+      <h3 class="status-word">מחכה לאישור</h3>
+      <p class="status-line">הקיוסק קיבל את ההזמנה</p>
+    </div>
+    <ol class="steps">
+      <li class="done"><i data-lucide="circle-check"></i>התקבלה</li>
+      <li class="now"><i data-lucide="loader"></i>אישור</li>
+      <li><i data-lucide="circle"></i>בדרך</li>
+    </ol>
+    <button class="secondary" data-go="home">ביטול הזמנה</button>
+  </div>
+
+  <div class="view" data-view="coming" hidden>
+    <header class="deck-bar">
+      <div><p class="who">ההזמנה שלך</p><p class="where item-name">ארטיק</p></div>
+    </header>
+    <div class="status">
+      <h3 class="status-word">בדרך אליך</h3>
+      <p class="minutes"><b class="mins">3</b><span>דקות</span></p>
+      <p class="status-line">דני מהקיוסק מביא לך <span class="item-name">ארטיק</span></p>
+    </div>
+    <ol class="steps">
+      <li class="done"><i data-lucide="circle-check"></i>התקבלה</li>
+      <li class="done"><i data-lucide="circle-check"></i>אושרה</li>
+      <li class="now"><i data-lucide="footprints"></i>בדרך</li>
+    </ol>
+  </div>
+
+  <div class="view" data-view="arrived" hidden>
+    <header class="deck-bar">
+      <div><p class="who">ההזמנה שלך</p><p class="where item-name">מים קרים</p></div>
+    </header>
+    <div class="status">
+      <span class="status-icon"><i data-lucide="circle-check"></i></span>
+      <h3 class="status-word">הגיע!</h3>
+      <p class="status-line">דני ליד העמדה שלך</p>
+    </div>
+    <button class="primary" data-go="home">קיבלתי</button>
+  </div>
+
+  <div class="view" data-view="declined" hidden>
+    <header class="deck-bar">
+      <div><p class="who">ההזמנה שלך</p><p class="where item-name">קפה קר</p></div>
+    </header>
+    <div class="status">
+      <span class="status-icon huge"><i data-lucide="x"></i></span>
+      <h3 class="status-word">לא אושרה</h3>
+      <p class="status-line">הקיוסק לא יכול להכין את זה עכשיו</p>
+    </div>
+    <button class="primary" data-go="home">להזמין משהו אחר</button>
+  </div>
+
+  <div class="view" data-view="breakwait" hidden>
+    <header class="deck-bar">
+      <div><p class="who">בקשת הפסקה</p><p class="where">5 דקות</p></div>
+    </header>
+    <div class="status">
+      <span class="status-icon"><i data-lucide="hourglass"></i></span>
+      <h3 class="status-word">מחכה לאישור</h3>
+      <p class="status-line">עד שמישהו מגיע, העיניים נשארות על המים</p>
+    </div>
+    <button class="secondary" data-go="home">ביטול בקשה</button>
+  </div>
+
+  <div class="view" data-view="breakok" hidden>
+    <header class="deck-bar">
+      <div><p class="who">בקשת הפסקה</p><p class="where">אושרה</p></div>
+    </header>
+    <div class="status">
+      <span class="status-icon"><i data-lucide="repeat-2"></i></span>
+      <h3 class="status-word long">נועה תבוא להחליף אותך בקרוב</h3>
+      <p class="minutes"><b class="mins">2</b><span>דקות</span></p>
+    </div>
+    <button class="secondary" data-go="home">סגירה</button>
+  </div>
+</template>
+
+<main class="page" lang="he" dir="rtl">
+  <h1>וולט למצילים</h1>
+  <p>מוקאפ ראשון של הצד של המציל. כל מסך לחיץ: הזמנה מהמועדפים, מעקב, דחייה ובקשת הפסקה.</p>
+
+  <div class="gallery">
+    <figure>
+      <div class="phone" data-state="home"></div>
+      <figcaption><h2>מסך הבית</h2><p>מועדפים גדולים, טוקנים, וכפתור הפסקה ליד האגודל</p></figcaption>
+    </figure>
+    <figure>
+      <div class="phone" data-state="pending"></div>
+      <figcaption><h2>מחכה לאישור</h2><p>המים צהובים ונמוכים, הקיוסק עוד לא אישר</p></figcaption>
+    </figure>
+    <figure>
+      <div class="phone" data-state="coming"></div>
+      <figcaption><h2>בדרך</h2><p>ככל שההזמנה מתקרבת המים עולים ונהיים ירוקים יותר</p></figcaption>
+    </figure>
+    <figure>
+      <div class="phone" data-state="declined"></div>
+      <figcaption><h2>נדחתה</h2><p>איקס אדום גדול, ואפשר להזמין משהו אחר</p></figcaption>
+    </figure>
+    <figure>
+      <div class="phone" data-state="breakwait"></div>
+      <figcaption><h2>הפסקה, מחכה</h2><p>כתום עד שהבקשה מאושרת</p></figcaption>
+    </figure>
+    <figure>
+      <div class="phone" data-state="breakok"></div>
+      <figcaption><h2>הפסקה, אושרה</h2><p>ירוק, עם השם של מי שמחליף וזמן משוער</p></figcaption>
+    </figure>
+  </div>
+</main>
+
+<script>
+// Build each phone from the templates so the markup lives in one place.
+const LEVEL = { home: 62, pending: 40, coming: 72, arrived: 100, declined: 100, breakwait: 30, breakok: 100 };
+const TINT = { home: 'aqua', pending: 'amber', coming: 'green', arrived: 'green', declined: 'red', breakwait: 'orange', breakok: 'green' };
+
+const poolTemplate = document.getElementById('pool');
+const viewsTemplate = document.getElementById('views');
+
+document.querySelectorAll('.phone').forEach((phone) => {
+  phone.append(poolTemplate.content.cloneNode(true));
+  phone.append(viewsTemplate.content.cloneNode(true));
+  phone.timers = [];
+  paint(phone, phone.dataset.state);
+  phone.querySelectorAll('.view').forEach((view) => {
+    view.hidden = view.dataset.view !== phone.dataset.state;
+  });
+  phone.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-go]');
+    if (button) {
+      handle(phone, button);
+    }
+  });
+});
+
+if (window.lucide) {
+  lucide.createIcons();
+}
+
+function paint(phone, state) {
+  phone.dataset.tint = TINT[state];
+  phone.dataset.tone = TINT[state] === 'red' ? 'dark' : 'light';
+  phone.querySelector('.water').style.setProperty('--level', LEVEL[state]);
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script>
+if (window.lucide) {
+  lucide.createIcons();
+}
+
+const motion = gsap.matchMedia();
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Water starts at the level of its screen; GSAP owns the transform from here on.
+document.querySelectorAll('.phone').forEach((phone) => {
+  const water = phone.querySelector('.water');
+  water.style.transform = 'none';
+  gsap.set(water, { yPercent: 100 - LEVEL[phone.dataset.state] });
+});
+
+motion.add('(prefers-reduced-motion: no-preference)', () => {
+  gsap.utils.toArray('.c1').forEach((layer) => {
+    gsap.to(layer, { xPercent: -9, yPercent: 6, duration: 11, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+  });
+  gsap.utils.toArray('.c2').forEach((layer) => {
+    gsap.to(layer, { xPercent: 8, yPercent: -7, duration: 8, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+  });
+  gsap.utils.toArray('.surface').forEach((wave) => {
+    gsap.to(wave, { xPercent: -50, duration: 7, repeat: -1, ease: 'none' });
+  });
+});
+
+function show(phone, state) {
+  phone.timers.forEach(clearTimeout);
+  phone.timers = [];
+  phone.dataset.state = state;
+
+  const next = phone.querySelector(`.view[data-view="${state}"]`);
+  phone.querySelectorAll('.view').forEach((view) => {
+    view.hidden = view !== next;
+  });
+
+  phone.dataset.tint = TINT[state];
+  phone.dataset.tone = TINT[state] === 'red' ? 'dark' : 'light';
+  const duration = reduceMotion ? 0 : 1;
+
+  phone.querySelectorAll('.tint').forEach((tint) => {
+    const isActive = tint.classList.contains(`t-${TINT[state]}`) || tint.classList.contains('t-aqua');
+    gsap.to(tint, { opacity: isActive ? 1 : 0, duration: duration * 0.8 });
+  });
+  setLevel(phone, LEVEL[state], duration);
+
+  if (!reduceMotion) {
+    gsap.fromTo(next, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.35, ease: 'power2.out' });
+  }
+}
+
+function setLevel(phone, level, duration) {
+  gsap.to(phone.querySelector('.water'), { yPercent: 100 - level, duration, ease: 'power2.inOut' });
+}
+
+function later(phone, delay, task) {
+  phone.timers.push(setTimeout(task, delay));
+}
+
+function handle(phone, button) {
+  const target = button.dataset.go;
+
+  if (target === 'home') {
+    show(phone, 'home');
+    return;
+  }
+
+  if (target === 'order') {
+    const item = button.dataset.item;
+    phone.querySelectorAll('.item-name').forEach((label) => {
+      label.textContent = item;
+    });
+    show(phone, 'pending');
+    later(phone, 2200, () => {
+      if (button.dataset.outcome === 'declined') {
+        show(phone, 'declined');
+      } else {
+        countDown(phone, 4);
+      }
+    });
+    return;
+  }
+
+  if (target === 'break') {
+    show(phone, 'breakwait');
+    later(phone, 2600, () => show(phone, 'breakok'));
+  }
+}
+
+// Each tick the order is a minute closer: the water rises toward the top.
+function countDown(phone, minutes) {
+  show(phone, 'coming');
+  const label = phone.querySelector('[data-view="coming"] .mins');
+  const totalMinutes = minutes;
+
+  const tick = (remaining) => {
+    if (remaining === 0) {
+      show(phone, 'arrived');
+      return;
+    }
+    label.textContent = remaining;
+    const progress = (totalMinutes - remaining) / totalMinutes;
+    setLevel(phone, 72 + progress * 26, reduceMotion ? 0 : 1.2);
+    later(phone, 1600, () => tick(remaining - 1));
+  };
+  tick(minutes);
+}
+</script>
+</body>
+</html>
