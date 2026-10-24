@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&family=Karantina:wght@700&display=swap" rel="stylesheet">
 <style>
-/* hallmark v2.0.0 | deal: manual, custom direction "pool water" (by request) | scope: app screen | signature: the water level rises and turns green as the order gets closer */
-/* critique: status is carried by water colour AND level AND one big word, so it reads from the corner of the eye; white plates float on the water for the controls; one display face only for status words and minutes */
+/* hallmark v2.0.0 | deal: manual, custom direction "pool water" (by request) | scope: app screens | signature: the water level and colour carry the status of a shift request */
+/* critique: browsing screens sit on calm aqua water; a request turns the water amber and low, a confirmed shift fills it green, a lost one turns it red; white plates float on the water for the content; one display face only for headlines and status words */
 
 :root {
   --page: oklch(95.5% 0.012 220);
@@ -18,6 +18,7 @@
   --deck: oklch(98.5% 0.004 220);
   --grout: oklch(91% 0.012 220);
   --plate: oklch(99.5% 0.002 220);
+  --chip: oklch(94.5% 0.012 220);
   --ink: oklch(21% 0.035 245);
   --ink-2: oklch(40% 0.03 245);
   --on-dark: oklch(99% 0.003 220);
@@ -25,13 +26,13 @@
   --band-2: oklch(62% 0.12 225);
   --grid: oklch(35% 0.08 240 / 0.22);
   --lane: oklch(30% 0.09 250 / 0.3);
+  --ok: oklch(50% 0.14 152);
+  --warn: oklch(55% 0.16 50);
 
   --aqua-1: oklch(87% 0.085 205);
   --aqua-2: oklch(64% 0.12 230);
   --amber-1: oklch(92% 0.12 92);
   --amber-2: oklch(80% 0.16 75);
-  --orange-1: oklch(88% 0.12 68);
-  --orange-2: oklch(72% 0.17 50);
   --green-1: oklch(91% 0.15 150);
   --green-2: oklch(70% 0.17 152);
   --red-1: oklch(60% 0.21 27);
@@ -43,6 +44,7 @@
   --radius-phone: 44px;
   --radius-plate: 22px;
   --dur-micro: 120ms;
+  --plate-shadow: 0 10px 20px -14px oklch(25% 0.08 240 / 0.7);
 }
 
 /* only the page around the phones follows the viewer's theme; the phones keep the pool look */
@@ -81,7 +83,9 @@ button { font: inherit; color: inherit; }
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 .page > h1 { font-size: 28px; font-weight: 800; margin: 0 0 4px; }
-.page > p { margin: 0 0 32px; color: var(--page-fg-2); max-width: 60ch; }
+.page > p { margin: 0 0 40px; color: var(--page-fg-2); max-width: 62ch; }
+.side { margin: 56px 0 20px; font-size: 22px; font-weight: 800; }
+.side:first-of-type { margin-top: 0; }
 
 .gallery {
   display: grid;
@@ -119,19 +123,17 @@ figcaption p { margin: 2px 0 0; font-size: 15px; color: var(--page-fg-2); }
 }
 .water {
   position: absolute; inset: 0;
-  transform: translateY(calc((100 - var(--level, 62)) * 1%));
+  transform: translateY(calc((100 - var(--level, 40)) * 1%));
   will-change: transform;
 }
 .tint { position: absolute; inset: 0; opacity: 0; }
-.t-aqua   { background: linear-gradient(var(--aqua-1), var(--aqua-2)); opacity: 1; }
-.t-amber  { background: linear-gradient(var(--amber-1), var(--amber-2)); }
-.t-orange { background: linear-gradient(var(--orange-1), var(--orange-2)); }
-.t-green  { background: linear-gradient(var(--green-1), var(--green-2)); }
-.t-red    { background: linear-gradient(var(--red-1), var(--red-2)); }
-.phone[data-tint="amber"]  .t-amber,
-.phone[data-tint="orange"] .t-orange,
-.phone[data-tint="green"]  .t-green,
-.phone[data-tint="red"]    .t-red { opacity: 1; }
+.t-aqua  { background: linear-gradient(var(--aqua-1), var(--aqua-2)); opacity: 1; }
+.t-amber { background: linear-gradient(var(--amber-1), var(--amber-2)); }
+.t-green { background: linear-gradient(var(--green-1), var(--green-2)); }
+.t-red   { background: linear-gradient(var(--red-1), var(--red-2)); }
+.phone[data-tint="amber"] .t-amber,
+.phone[data-tint="green"] .t-green,
+.phone[data-tint="red"]   .t-red { opacity: 1; }
 
 .floor {
   position: absolute; inset: 14px -20px -20px;
@@ -171,7 +173,7 @@ figcaption p { margin: 2px 0 0; font-size: 15px; color: var(--page-fg-2); }
 .view {
   position: relative;
   height: 100%;
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: column; gap: 12px;
   padding: 22px 20px 22px;
   color: var(--ui);
 }
@@ -180,70 +182,147 @@ figcaption p { margin: 2px 0 0; font-size: 15px; color: var(--page-fg-2); }
 .deck-bar { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .who { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.2; }
 .where { margin: 0; font-size: 15px; color: var(--ui-2); }
-.tokens {
-  margin: 0; display: inline-flex; align-items: center; gap: 6px;
+
+.pill {
+  flex: none;
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 36px; padding: 0 14px 0 12px;
   background: var(--plate); color: var(--ink);
-  border-radius: 999px; padding: 6px 14px 6px 12px;
-  font-size: 15px; font-weight: 500;
+  border: 0; border-radius: 999px;
+  font-size: 15px; font-weight: 700;
   box-shadow: 0 0 0 1.5px var(--grout);
 }
-.tokens b { font-size: 18px; font-weight: 800; }
-.tokens svg { width: 18px; height: 18px; }
+button.pill { cursor: pointer; }
+.pill .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); }
+.pill[aria-pressed="false"] .dot { background: var(--ink-2); opacity: 0.5; }
 
-.ask { font-family: var(--font-display); font-weight: 700; font-size: 64px; line-height: 0.95; margin: 26px 0 18px; }
+.ask { font-family: var(--font-display); font-weight: 700; font-size: 64px; line-height: 0.95; margin: 14px 0 0; }
+.sub { margin: -6px 0 2px; font-size: 15px; color: var(--ui-2); }
 
-.favs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.fav {
-  min-height: 118px;
-  display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between;
+.panel {
+  background: var(--plate); color: var(--ink);
+  border-radius: var(--radius-plate);
   padding: 14px 16px;
+  box-shadow: var(--plate-shadow);
+}
+.panel h4 { margin: 0 0 10px; font-size: 14px; font-weight: 700; color: var(--ink-2); }
+
+/* profile */
+.me { display: flex; align-items: center; gap: 12px; }
+.avatar {
+  flex: none; display: grid; place-items: center;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--band); color: var(--on-dark);
+  font-family: var(--font-display); font-size: 36px; line-height: 1;
+}
+.avatar.small { width: 44px; height: 44px; font-size: 28px; }
+
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.slots { display: flex; gap: 6px; margin-top: 8px; }
+.chip {
+  min-height: 40px; padding: 0 10px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 0; border-radius: 12px;
+  background: var(--chip); color: var(--ink);
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  transition: transform var(--dur-micro) ease-out;
+}
+.slots .chip { flex: 1; }
+.chip svg { width: 17px; height: 17px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--on-dark); }
+
+.certs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.cert { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.cert > svg { width: 24px; height: 24px; color: var(--band); }
+.cert b { display: block; font-size: 16px; font-weight: 800; line-height: 1.2; }
+.cert small { display: block; font-size: 13px; color: var(--ink-2); }
+.cert .state { font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+.cert .state svg { width: 16px; height: 16px; }
+.state.ok { color: var(--ok); }
+.state.warn { color: var(--warn); }
+.state.none { color: var(--ink-2); }
+
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); text-align: center; }
+.stats b { display: block; font-family: var(--font-display); font-size: 42px; line-height: 0.9; }
+.stats span { font-size: 13px; color: var(--ink-2); }
+
+/* shifts list */
+.shifts { display: grid; gap: 10px; }
+.shift {
+  display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  min-height: 74px; padding: 12px 14px;
   background: var(--plate); color: var(--ink);
   border: 0; border-radius: var(--radius-plate);
-  box-shadow: 0 10px 20px -14px oklch(25% 0.08 240 / 0.7);
+  box-shadow: var(--plate-shadow);
   cursor: pointer; text-align: start;
   transition: transform var(--dur-micro) ease-out;
 }
-.fav svg { width: 30px; height: 30px; stroke-width: 2.2; color: var(--band); }
-.fav-name { font-size: 20px; font-weight: 800; line-height: 1.15; }
-.fav-cost { font-size: 14px; color: var(--ink-2); }
-.fav:hover { box-shadow: 0 0 0 2px var(--band), 0 10px 20px -14px oklch(25% 0.08 240 / 0.7); }
-.fav:active, .cat:active, .break:active, .primary:active, .secondary:active { transform: scale(0.97); }
-
-.cats { display: flex; gap: 8px; margin-top: 14px; }
-.cat {
-  flex: 1; min-height: 44px; border: 0; border-radius: 999px;
-  background: oklch(100% 0 0 / 0.7); color: var(--ink);
-  font-size: 15px; font-weight: 500; cursor: pointer;
-  transition: transform var(--dur-micro) ease-out;
+.shift:hover { box-shadow: 0 0 0 2px var(--band), var(--plate-shadow); }
+.kind-icon {
+  display: grid; place-items: center;
+  width: 42px; height: 42px; border-radius: 14px;
+  background: var(--aqua-1); color: var(--band);
 }
-.cat:hover { background: var(--plate); }
+.kind-icon svg { width: 22px; height: 22px; stroke-width: 2.2; }
+.shift-name { display: block; font-size: 17px; font-weight: 800; line-height: 1.2; }
+.shift-meta { display: block; font-size: 14px; color: var(--ink-2); }
+.shift-pay { text-align: center; line-height: 1; }
+.shift-pay b { display: block; font-family: var(--font-display); font-size: 34px; }
+.shift-pay span { font-size: 12px; color: var(--ink-2); }
+.shift.locked { background: oklch(100% 0 0 / 0.62); box-shadow: none; cursor: not-allowed; }
+.shift.locked:hover { box-shadow: none; }
+.shift.locked .kind-icon { background: var(--chip); color: var(--ink-2); }
+.shift.locked .shift-meta { color: var(--warn); font-weight: 700; }
 
-.break {
+.tabs {
   margin-top: auto;
-  display: flex; align-items: center; gap: 14px;
-  min-height: 76px; padding: 12px 20px;
-  border: 0; border-radius: var(--radius-plate);
-  background: var(--ink); color: var(--on-dark);
-  cursor: pointer; text-align: start;
-  transition: transform var(--dur-micro) ease-out;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;
+  padding: 6px;
+  background: var(--plate); border-radius: var(--radius-plate);
+  box-shadow: var(--plate-shadow);
 }
-.break svg { width: 30px; height: 30px; flex: none; }
-.break b { display: block; font-size: 20px; font-weight: 800; }
-.break small { display: block; font-size: 14px; opacity: 0.8; }
-.break:hover { background: var(--ink-2); }
+.tabs button {
+  min-height: 52px; border: 0; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: transparent; color: var(--ink);
+  font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.tabs button svg { width: 20px; height: 20px; }
+.tabs button[aria-current="page"] { background: var(--ink); color: var(--on-dark); }
 
+/* shift detail */
+.back {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 40px; padding: 0 14px 0 10px;
+  border: 0; border-radius: 999px;
+  background: oklch(100% 0 0 / 0.72); color: var(--ink);
+  font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.back svg { width: 18px; height: 18px; }
+.kind-tag { margin: 0; font-size: 14px; font-weight: 700; color: var(--band); }
+.place { margin: 0; font-size: 26px; font-weight: 800; line-height: 1.15; }
+.when { font-family: var(--font-display); font-weight: 700; font-size: 52px; line-height: 0.95; margin: 0; }
+.when bdi { display: inline-block; }
+
+.pay-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.pay-big { font-family: var(--font-display); font-size: 44px; line-height: 0.9; }
+.pay-unit, .pay-total { font-size: 15px; color: var(--ink-2); }
+
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.checks li { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 500; }
+.checks svg { width: 20px; height: 20px; flex: none; color: var(--ok); stroke-width: 2.6; }
+.checks li.info svg { color: var(--band); }
+
+/* status screens */
 .status { margin-top: auto; margin-bottom: auto; padding-top: 12px; }
 .status-icon svg { width: 56px; height: 56px; stroke-width: 2.4; }
 .status-icon.huge svg { width: 132px; height: 132px; stroke-width: 3; }
 .status-word { font-family: var(--font-display); font-weight: 700; font-size: 72px; line-height: 0.92; margin: 10px 0 8px; }
-.status-word.long { font-size: 58px; }
 .status-line { margin: 0; font-size: 19px; font-weight: 500; max-width: 26ch; }
-.minutes { display: flex; align-items: baseline; gap: 10px; margin: 6px 0 0; }
-.minutes b { font-family: var(--font-display); font-weight: 700; font-size: 132px; line-height: 0.8; font-variant-numeric: tabular-nums; }
-.minutes span { font-size: 22px; font-weight: 700; }
 
 .steps {
-  list-style: none; margin: 0 0 16px; padding: 10px;
+  list-style: none; margin: 0; padding: 10px;
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;
   background: oklch(100% 0 0 / 0.78); border-radius: 18px; color: var(--ink);
   backdrop-filter: blur(8px);
@@ -256,6 +335,22 @@ figcaption p { margin: 2px 0 0; font-size: 15px; color: var(--page-fg-2); }
 .steps li.done { color: var(--ink); font-weight: 700; }
 .steps li.now { color: var(--ink); font-weight: 800; }
 
+/* pool side */
+.people { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.person { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.person b { display: block; font-size: 16px; font-weight: 800; line-height: 1.2; }
+.person small { display: block; font-size: 13px; color: var(--ink-2); }
+.person small.warn { color: var(--warn); font-weight: 700; }
+.person.dim .avatar { background: var(--chip); color: var(--ink-2); }
+.invite {
+  min-height: 40px; padding: 0 16px;
+  border: 0; border-radius: 999px;
+  background: var(--ink); color: var(--on-dark);
+  font-size: 15px; font-weight: 800; cursor: pointer;
+  transition: transform var(--dur-micro) ease-out;
+}
+.invite:disabled { background: var(--chip); color: var(--ink-2); cursor: not-allowed; }
+
 .primary, .secondary {
   min-height: 60px; width: 100%;
   border: 0; border-radius: var(--radius-plate);
@@ -265,9 +360,12 @@ figcaption p { margin: 2px 0 0; font-size: 15px; color: var(--page-fg-2); }
 .primary { background: var(--ink); color: var(--on-dark); }
 .secondary { background: oklch(100% 0 0 / 0.78); color: var(--ink); backdrop-filter: blur(8px); }
 .phone[data-tone="dark"] .primary { background: var(--plate); color: var(--ink); }
+.push { margin-top: auto; }
+
+.shift:active, .chip:active, .invite:enabled:active, .primary:active, .secondary:active { transform: scale(0.97); }
 
 @media (prefers-reduced-motion: reduce) {
-  .fav, .cat, .break, .primary, .secondary { transition: none; }
+  .shift, .chip, .invite, .primary, .secondary { transition: none; }
 }
 </style>
 </head>
@@ -295,7 +393,6 @@ figcaption p { margin: 2px 0 0; font-size: 15px; color: var(--page-fg-2); }
     <div class="water">
       <div class="tint t-aqua"></div>
       <div class="tint t-amber"></div>
-      <div class="tint t-orange"></div>
       <div class="tint t-green"></div>
       <div class="tint t-red"></div>
       <div class="floor"><div class="lane"></div></div>
@@ -308,144 +405,297 @@ figcaption p { margin: 2px 0 0; font-size: 15px; color: var(--page-fg-2); }
 </template>
 
 <template id="views">
-  <div class="view" data-view="home">
+  <!-- lifeguard: profile -->
+  <div class="view" data-view="profile">
     <header class="deck-bar">
-      <div><p class="who">היי אורי</p><p class="where">עמדה 2, בריכה גדולה</p></div>
-      <p class="tokens"><i data-lucide="coins"></i><b>6</b> טוקנים</p>
+      <div class="me">
+        <span class="avatar" aria-hidden="true">ע</span>
+        <div><p class="who">עידו לוי</p><p class="where">גבעתיים, עד 15 ק״מ</p></div>
+      </div>
+      <button class="pill avail" aria-pressed="true"><span class="dot"></span><span class="avail-word">זמין</span></button>
     </header>
-    <h3 class="ask">מה חסר לך?</h3>
-    <div class="favs">
-      <button class="fav" data-go="order" data-item="מים קרים"><i data-lucide="droplet"></i><span><span class="fav-name">מים קרים</span><br><span class="fav-cost">חינם</span></span></button>
-      <button class="fav" data-go="order" data-item="ארטיק"><i data-lucide="ice-cream-cone"></i><span><span class="fav-name">ארטיק</span><br><span class="fav-cost">טוקן אחד</span></span></button>
-      <button class="fav" data-go="order" data-item="קפה קר" data-outcome="declined"><i data-lucide="coffee"></i><span><span class="fav-name">קפה קר</span><br><span class="fav-cost">2 טוקנים</span></span></button>
-      <button class="fav" data-go="order" data-item="קרם הגנה"><i data-lucide="sun"></i><span><span class="fav-name">קרם הגנה</span><br><span class="fav-cost">חינם</span></span></button>
-    </div>
-    <nav class="cats" aria-label="קטגוריות">
-      <button class="cat">אוכל ושתייה</button>
-      <button class="cat">שמש</button>
-      <button class="cat">ציוד</button>
+
+    <section class="panel">
+      <h4>מתי אני זמין</h4>
+      <div class="days">
+        <button class="chip" aria-pressed="false">א</button>
+        <button class="chip" aria-pressed="false">ב</button>
+        <button class="chip" aria-pressed="false">ג</button>
+        <button class="chip" aria-pressed="false">ד</button>
+        <button class="chip" aria-pressed="true">ה</button>
+        <button class="chip" aria-pressed="true">ו</button>
+        <button class="chip" aria-pressed="true">ש</button>
+      </div>
+      <div class="slots">
+        <button class="chip" aria-pressed="true"><i data-lucide="sunrise"></i>בוקר</button>
+        <button class="chip" aria-pressed="true"><i data-lucide="sun"></i>צהריים</button>
+        <button class="chip" aria-pressed="false"><i data-lucide="sunset"></i>ערב</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h4>הכשרות</h4>
+      <ul class="certs">
+        <li class="cert">
+          <i data-lucide="shield-check"></i>
+          <span><b>מציל בריכה</b><small>תעודה מאומתת</small></span>
+          <span class="state ok"><i data-lucide="circle-check"></i>עד 06.2027</span>
+        </li>
+        <li class="cert">
+          <i data-lucide="heart-pulse"></i>
+          <span><b>עזרה ראשונה</b><small>ריענון שנתי</small></span>
+          <span class="state warn"><i data-lucide="circle-alert"></i>פג בעוד 30 יום</span>
+        </li>
+        <li class="cert">
+          <i data-lucide="waves"></i>
+          <span><b>מציל ים</b><small>פותח משמרות בחופים</small></span>
+          <span class="state none"><i data-lucide="plus"></i>להוסיף</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="panel stats">
+      <div><b>4</b><span>קיצים</span></div>
+      <div><b>38</b><span>משמרות באפליקציה</span></div>
+      <div><b>4.9</b><span>דירוג מבריכות</span></div>
+    </section>
+
+    <nav class="tabs" aria-label="ניווט">
+      <button data-go="shifts"><i data-lucide="calendar-days"></i>משמרות</button>
+      <button data-go="profile" aria-current="page"><i data-lucide="user"></i>הפרופיל שלי</button>
     </nav>
-    <button class="break" data-go="break"><i data-lucide="repeat-2"></i><span><b>הפסקה של 5 דקות</b><small>מישהו יבוא להחליף אותך</small></span></button>
   </div>
 
+  <!-- lifeguard: open shifts -->
+  <div class="view" data-view="shifts" hidden>
+    <header class="deck-bar">
+      <div><p class="who">היי עידו</p><p class="where">ה׳ עד ש׳, בוקר וצהריים</p></div>
+      <span class="pill"><span class="dot"></span>זמין</span>
+    </header>
+    <h3 class="ask">משמרות בשבילך</h3>
+    <p class="sub">רק מה שמתאים לזמינות ולהכשרות שלך</p>
+    <div class="shifts">
+      <button class="shift" data-go="detail" data-kind="מלון" data-icon="hotel" data-place="מלון חוף הים" data-day="שבת" data-time="07:00–13:00" data-pay="62" data-total="372" data-dist="4 ק״מ" data-crew="מציל נוסף במשמרת">
+        <span class="kind-icon"><i data-lucide="hotel"></i></span>
+        <span><span class="shift-name">מלון חוף הים</span><span class="shift-meta">שבת · <bdi dir="ltr">07:00–13:00</bdi> · 4 ק״מ</span></span>
+        <span class="shift-pay"><b>62 ₪</b><span>לשעה</span></span>
+      </button>
+      <button class="shift" data-go="detail" data-kind="מרכז ספורט" data-icon="dumbbell" data-place="מרכז הספורט העירוני" data-day="שישי" data-time="14:00–19:00" data-pay="55" data-total="275" data-dist="2 ק״מ" data-crew="שני מצילים נוספים במשמרת">
+        <span class="kind-icon"><i data-lucide="dumbbell"></i></span>
+        <span><span class="shift-name">מרכז הספורט העירוני</span><span class="shift-meta">שישי · <bdi dir="ltr">14:00–19:00</bdi> · 2 ק״מ</span></span>
+        <span class="shift-pay"><b>55 ₪</b><span>לשעה</span></span>
+      </button>
+      <button class="shift" data-go="detail" data-outcome="taken" data-kind="אירוע פרטי" data-icon="party-popper" data-place="מסיבת בריכה, הרצליה" data-day="שבת" data-time="11:00–16:00" data-pay="80" data-total="400" data-dist="12 ק״מ" data-crew="מציל יחיד באירוע">
+        <span class="kind-icon"><i data-lucide="party-popper"></i></span>
+        <span><span class="shift-name">מסיבת בריכה, הרצליה</span><span class="shift-meta">שבת · <bdi dir="ltr">11:00–16:00</bdi> · 12 ק״מ</span></span>
+        <span class="shift-pay"><b>80 ₪</b><span>לשעה</span></span>
+      </button>
+      <div class="shift locked" aria-disabled="true">
+        <span class="kind-icon"><i data-lucide="lock"></i></span>
+        <span><span class="shift-name">בריכה עירונית, גבעתיים</span><span class="shift-meta">העזרה הראשונה תפוג לפני המשמרת</span></span>
+        <span class="shift-pay"><b>58 ₪</b><span>לשעה</span></span>
+      </div>
+    </div>
+    <nav class="tabs" aria-label="ניווט">
+      <button data-go="shifts" aria-current="page"><i data-lucide="calendar-days"></i>משמרות</button>
+      <button data-go="profile"><i data-lucide="user"></i>הפרופיל שלי</button>
+    </nav>
+  </div>
+
+  <!-- lifeguard: one shift -->
+  <div class="view" data-view="detail" hidden>
+    <button class="back" data-go="shifts"><i data-lucide="arrow-right"></i>משמרות</button>
+    <div>
+      <p class="kind-tag s-kind">מלון</p>
+      <h3 class="place s-place">מלון חוף הים</h3>
+    </div>
+    <p class="when"><span class="s-day">שבת</span> <bdi dir="ltr" class="s-time">07:00–13:00</bdi></p>
+
+    <section class="panel pay-row">
+      <span><b class="pay-big"><span class="s-pay">62</span> ₪</b> <span class="pay-unit">לשעה</span></span>
+      <span class="pay-total"><span class="s-total">372</span> ₪ למשמרת</span>
+    </section>
+
+    <section class="panel">
+      <h4>מה הבריכה צריכה</h4>
+      <ul class="checks">
+        <li><i data-lucide="circle-check"></i>מציל בריכה בתוקף</li>
+        <li><i data-lucide="circle-check"></i>עזרה ראשונה בתוקף</li>
+        <li><i data-lucide="circle-check"></i><span>זמין ב<span class="s-day">שבת</span></span></li>
+        <li class="info"><i data-lucide="users"></i><span class="s-crew">מציל נוסף במשמרת</span></li>
+        <li class="info"><i data-lucide="map-pin"></i><span><span class="s-dist">4 ק״מ</span> ממך</span></li>
+      </ul>
+    </section>
+
+    <button class="primary push" data-go="apply">אני רוצה את המשמרת</button>
+  </div>
+
+  <!-- lifeguard: waiting for the pool -->
   <div class="view" data-view="pending" hidden>
     <header class="deck-bar">
-      <div><p class="who">ההזמנה שלך</p><p class="where item-name">מים קרים</p></div>
+      <div><p class="who">בקשה למשמרת</p><p class="where s-place">מלון חוף הים</p></div>
     </header>
     <div class="status">
       <span class="status-icon"><i data-lucide="clock-3"></i></span>
-      <h3 class="status-word">מחכה לאישור</h3>
-      <p class="status-line">הקיוסק קיבל את ההזמנה</p>
+      <h3 class="status-word">מחכה לבריכה</h3>
+      <p class="status-line">הבריכה רואה את הפרופיל וההכשרות שלך</p>
     </div>
     <ol class="steps">
-      <li class="done"><i data-lucide="circle-check"></i>התקבלה</li>
+      <li class="done"><i data-lucide="circle-check"></i>נשלחה</li>
       <li class="now"><i data-lucide="loader"></i>אישור</li>
-      <li><i data-lucide="circle"></i>בדרך</li>
+      <li><i data-lucide="circle"></i>משמרת</li>
     </ol>
-    <button class="secondary" data-go="home">ביטול הזמנה</button>
+    <button class="secondary" data-go="shifts">ביטול הבקשה</button>
   </div>
 
-  <div class="view" data-view="coming" hidden>
+  <!-- lifeguard: confirmed -->
+  <div class="view" data-view="confirmed" hidden>
     <header class="deck-bar">
-      <div><p class="who">ההזמנה שלך</p><p class="where item-name">ארטיק</p></div>
-    </header>
-    <div class="status">
-      <h3 class="status-word">בדרך אליך</h3>
-      <p class="minutes"><b class="mins">3</b><span>דקות</span></p>
-      <p class="status-line">דני מהקיוסק מביא לך <span class="item-name">ארטיק</span></p>
-    </div>
-    <ol class="steps">
-      <li class="done"><i data-lucide="circle-check"></i>התקבלה</li>
-      <li class="done"><i data-lucide="circle-check"></i>אושרה</li>
-      <li class="now"><i data-lucide="footprints"></i>בדרך</li>
-    </ol>
-  </div>
-
-  <div class="view" data-view="arrived" hidden>
-    <header class="deck-bar">
-      <div><p class="who">ההזמנה שלך</p><p class="where item-name">מים קרים</p></div>
+      <div><p class="who">בקשה למשמרת</p><p class="where s-place">מלון חוף הים</p></div>
     </header>
     <div class="status">
       <span class="status-icon"><i data-lucide="circle-check"></i></span>
-      <h3 class="status-word">הגיע!</h3>
-      <p class="status-line">דני ליד העמדה שלך</p>
+      <h3 class="status-word">המשמרת שלך!</h3>
+      <p class="status-line"><span class="s-place">מלון חוף הים</span><br><span class="s-day">שבת</span> <bdi dir="ltr" class="s-time">07:00–13:00</bdi></p>
     </div>
-    <button class="primary" data-go="home">קיבלתי</button>
+    <section class="panel">
+      <ul class="checks">
+        <li class="info"><i data-lucide="bell"></i>נזכיר לך ערב לפני</li>
+        <li class="info"><i data-lucide="users"></i><span class="s-crew">מציל נוסף במשמרת</span></li>
+      </ul>
+    </section>
+    <button class="primary" data-go="shifts">סגירה</button>
   </div>
 
-  <div class="view" data-view="declined" hidden>
+  <!-- lifeguard: someone else got it -->
+  <div class="view" data-view="taken" hidden>
     <header class="deck-bar">
-      <div><p class="who">ההזמנה שלך</p><p class="where item-name">קפה קר</p></div>
+      <div><p class="who">בקשה למשמרת</p><p class="where s-place">מסיבת בריכה, הרצליה</p></div>
     </header>
     <div class="status">
       <span class="status-icon huge"><i data-lucide="x"></i></span>
-      <h3 class="status-word">לא אושרה</h3>
-      <p class="status-line">הקיוסק לא יכול להכין את זה עכשיו</p>
+      <h3 class="status-word">המשמרת נתפסה</h3>
+      <p class="status-line">מציל אחר אושר לפניך. יש עוד 2 משמרות דומות ב<span class="s-day">שבת</span></p>
     </div>
-    <button class="primary" data-go="home">להזמין משהו אחר</button>
+    <button class="primary" data-go="shifts">למשמרות דומות</button>
   </div>
 
-  <div class="view" data-view="breakwait" hidden>
+  <!-- pool: open shift and matching lifeguards -->
+  <div class="view" data-view="poolside" hidden>
     <header class="deck-bar">
-      <div><p class="who">בקשת הפסקה</p><p class="where">5 דקות</p></div>
+      <div><p class="who">מלון חוף הים</p><p class="where">מנהלת הבריכה: מיכל</p></div>
+    </header>
+    <h3 class="ask">חסר מציל?</h3>
+
+    <section class="panel">
+      <h4>משמרת פתוחה</h4>
+      <p class="when">שבת <bdi dir="ltr">07:00–13:00</bdi></p>
+      <p class="sub" style="margin: 6px 0 0">מציל בריכה ועזרה ראשונה, 62 ₪ לשעה</p>
+    </section>
+
+    <section class="panel">
+      <h4>זמינים ומתאימים</h4>
+      <ul class="people">
+        <li class="person">
+          <span class="avatar small" aria-hidden="true">ע</span>
+          <span><b>עידו לוי</b><small>4 קיצים · 4.9 · 4 ק״מ</small></span>
+          <button class="invite" data-go="invite">הזמנה</button>
+        </li>
+        <li class="person">
+          <span class="avatar small" aria-hidden="true">מ</span>
+          <span><b>מאיה כהן</b><small>מציל ים · 6 קיצים · 7 ק״מ</small></span>
+          <button class="invite" data-go="invite">הזמנה</button>
+        </li>
+        <li class="person dim">
+          <span class="avatar small" aria-hidden="true">ד</span>
+          <span><b>דן אברהם</b><small class="warn">עזרה ראשונה פגה</small></span>
+          <button class="invite" disabled>חסרה הכשרה</button>
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <!-- pool: waiting for the lifeguard -->
+  <div class="view" data-view="poolwait" hidden>
+    <header class="deck-bar">
+      <div><p class="who">הזמנה למשמרת</p><p class="where">שבת <bdi dir="ltr">07:00–13:00</bdi></p></div>
     </header>
     <div class="status">
       <span class="status-icon"><i data-lucide="hourglass"></i></span>
-      <h3 class="status-word">מחכה לאישור</h3>
-      <p class="status-line">עד שמישהו מגיע, העיניים נשארות על המים</p>
+      <h3 class="status-word">מחכים לתשובה</h3>
+      <p class="status-line">שלחנו ל<span class="p-name">עידו</span> את פרטי המשמרת</p>
     </div>
-    <button class="secondary" data-go="home">ביטול בקשה</button>
+    <ol class="steps">
+      <li class="done"><i data-lucide="circle-check"></i>נשלחה</li>
+      <li class="now"><i data-lucide="loader"></i>תשובה</li>
+      <li><i data-lucide="circle"></i>סגור</li>
+    </ol>
+    <button class="secondary" data-go="poolside">ביטול ההזמנה</button>
   </div>
 
-  <div class="view" data-view="breakok" hidden>
+  <!-- pool: lifeguard accepted -->
+  <div class="view" data-view="poolok" hidden>
     <header class="deck-bar">
-      <div><p class="who">בקשת הפסקה</p><p class="where">אושרה</p></div>
+      <div><p class="who">הזמנה למשמרת</p><p class="where">שבת <bdi dir="ltr">07:00–13:00</bdi></p></div>
     </header>
     <div class="status">
-      <span class="status-icon"><i data-lucide="repeat-2"></i></span>
-      <h3 class="status-word long">נועה תבוא להחליף אותך בקרוב</h3>
-      <p class="minutes"><b class="mins">2</b><span>דקות</span></p>
+      <span class="status-icon"><i data-lucide="circle-check"></i></span>
+      <h3 class="status-word">יש מציל!</h3>
+      <p class="status-line"><span class="p-name">עידו</span> אישר ויגיע בשבת ב־<bdi dir="ltr">07:00</bdi></p>
     </div>
-    <button class="secondary" data-go="home">סגירה</button>
+    <button class="primary" data-go="poolside">סגירה</button>
   </div>
 </template>
 
 <main class="page" lang="he" dir="rtl">
   <h1>וולט למצילים</h1>
-  <p>מוקאפ ראשון של הצד של המציל. כל מסך לחיץ: הזמנה מהמועדפים, מעקב, דחייה ובקשת הפסקה.</p>
+  <p>מוקאפ של אפליקציה שמחברת בין מצילים לבריכות. המציל בונה פרופיל עם הכשרות, ניסיון וזמינות, ובוחר משמרות גמישות. הבריכה רואה רק מצילים זמינים עם ההכשרות הנכונות. כל מסך לחיץ.</p>
 
+  <h2 class="side">הצד של המציל</h2>
   <div class="gallery">
     <figure>
-      <div class="phone" data-state="home"></div>
-      <figcaption><h2>מסך הבית</h2><p>מועדפים גדולים, טוקנים, וכפתור הפסקה ליד האגודל</p></figcaption>
+      <div class="phone" data-state="profile"></div>
+      <figcaption><h2>פרופיל</h2><p>הכשרות עם תוקף, ניסיון, טווח נסיעה וזמינות לפי ימים ושעות</p></figcaption>
+    </figure>
+    <figure>
+      <div class="phone" data-state="shifts"></div>
+      <figcaption><h2>משמרות בשבילך</h2><p>רק מה שמתאים לזמינות ולהכשרות. משמרת שדורשת הכשרה שפגה נעולה</p></figcaption>
+    </figure>
+    <figure>
+      <div class="phone" data-state="detail"></div>
+      <figcaption><h2>פרטי משמרת</h2><p>שכר, דרישות ומי עוד במשמרת, ובקשה בלחיצה אחת</p></figcaption>
     </figure>
     <figure>
       <div class="phone" data-state="pending"></div>
-      <figcaption><h2>מחכה לאישור</h2><p>המים צהובים ונמוכים, הקיוסק עוד לא אישר</p></figcaption>
+      <figcaption><h2>מחכה לבריכה</h2><p>המים צהובים ונמוכים עד שהבריכה מאשרת</p></figcaption>
     </figure>
     <figure>
-      <div class="phone" data-state="coming"></div>
-      <figcaption><h2>בדרך</h2><p>ככל שההזמנה מתקרבת המים עולים ונהיים ירוקים יותר</p></figcaption>
+      <div class="phone" data-state="confirmed"></div>
+      <figcaption><h2>המשמרת שלך</h2><p>המים עולים ונהיים ירוקים כשהמשמרת נסגרת</p></figcaption>
     </figure>
     <figure>
-      <div class="phone" data-state="declined"></div>
-      <figcaption><h2>נדחתה</h2><p>איקס אדום גדול, ואפשר להזמין משהו אחר</p></figcaption>
+      <div class="phone" data-state="taken"></div>
+      <figcaption><h2>המשמרת נתפסה</h2><p>אדום, ומיד הצעה למשמרות דומות</p></figcaption>
+    </figure>
+  </div>
+
+  <h2 class="side">הצד של הבריכה</h2>
+  <div class="gallery">
+    <figure>
+      <div class="phone" data-state="poolside"></div>
+      <figcaption><h2>חסר מציל</h2><p>משמרת פתוחה ורשימת מצילים זמינים, מסוננת לפי הכשרות בתוקף</p></figcaption>
     </figure>
     <figure>
-      <div class="phone" data-state="breakwait"></div>
-      <figcaption><h2>הפסקה, מחכה</h2><p>כתום עד שהבקשה מאושרת</p></figcaption>
-    </figure>
-    <figure>
-      <div class="phone" data-state="breakok"></div>
-      <figcaption><h2>הפסקה, אושרה</h2><p>ירוק, עם השם של מי שמחליף וזמן משוער</p></figcaption>
+      <div class="phone" data-state="poolok"></div>
+      <figcaption><h2>יש מציל</h2><p>אותה שפה של מים: צהוב בהמתנה, ירוק כשהמציל אישר</p></figcaption>
     </figure>
   </div>
 </main>
 
 <script>
 // Build each phone from the templates so the markup lives in one place.
-const LEVEL = { home: 62, pending: 40, coming: 72, arrived: 100, declined: 100, breakwait: 30, breakok: 100 };
-const TINT = { home: 'aqua', pending: 'amber', coming: 'green', arrived: 'green', declined: 'red', breakwait: 'orange', breakok: 'green' };
+const LEVEL = { profile: 34, shifts: 30, detail: 44, pending: 40, confirmed: 100, taken: 100, poolside: 30, poolwait: 40, poolok: 100 };
+const TINT = { profile: 'aqua', shifts: 'aqua', detail: 'aqua', pending: 'amber', confirmed: 'green', taken: 'red', poolside: 'aqua', poolwait: 'amber', poolok: 'green' };
 
 const poolTemplate = document.getElementById('pool');
 const viewsTemplate = document.getElementById('views');
@@ -459,7 +709,7 @@ document.querySelectorAll('.phone').forEach((phone) => {
     view.hidden = view.dataset.view !== phone.dataset.state;
   });
   phone.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-go]');
+    const button = event.target.closest('[data-go], button[aria-pressed]');
     if (button) {
       handle(phone, button);
     }
@@ -523,68 +773,69 @@ function show(phone, state) {
     const isActive = tint.classList.contains(`t-${TINT[state]}`) || tint.classList.contains('t-aqua');
     gsap.to(tint, { opacity: isActive ? 1 : 0, duration: duration * 0.8 });
   });
-  setLevel(phone, LEVEL[state], duration);
+  gsap.to(phone.querySelector('.water'), { yPercent: 100 - LEVEL[state], duration, ease: 'power2.inOut' });
 
   if (!reduceMotion) {
     gsap.fromTo(next, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.35, ease: 'power2.out' });
   }
 }
 
-function setLevel(phone, level, duration) {
-  gsap.to(phone.querySelector('.water'), { yPercent: 100 - level, duration, ease: 'power2.inOut' });
-}
-
 function later(phone, delay, task) {
   phone.timers.push(setTimeout(task, delay));
+}
+
+function fill(phone, selector, text) {
+  phone.querySelectorAll(selector).forEach((node) => {
+    node.textContent = text;
+  });
+}
+
+// Copy the chosen shift into every screen that mentions it.
+function pickShift(phone, card) {
+  const shift = card.dataset;
+  fill(phone, '.s-kind', shift.kind);
+  fill(phone, '.s-place', shift.place);
+  fill(phone, '.s-day', shift.day);
+  fill(phone, '.s-time', shift.time);
+  fill(phone, '.s-pay', shift.pay);
+  fill(phone, '.s-total', shift.total);
+  fill(phone, '.s-dist', shift.dist);
+  fill(phone, '.s-crew', shift.crew);
+  phone.dataset.outcome = shift.outcome || 'confirmed';
 }
 
 function handle(phone, button) {
   const target = button.dataset.go;
 
-  if (target === 'home') {
-    show(phone, 'home');
-    return;
-  }
-
-  if (target === 'order') {
-    const item = button.dataset.item;
-    phone.querySelectorAll('.item-name').forEach((label) => {
-      label.textContent = item;
-    });
-    show(phone, 'pending');
-    later(phone, 2200, () => {
-      if (button.dataset.outcome === 'declined') {
-        show(phone, 'declined');
-      } else {
-        countDown(phone, 4);
-      }
-    });
-    return;
-  }
-
-  if (target === 'break') {
-    show(phone, 'breakwait');
-    later(phone, 2600, () => show(phone, 'breakok'));
-  }
-}
-
-// Each tick the order is a minute closer: the water rises toward the top.
-function countDown(phone, minutes) {
-  show(phone, 'coming');
-  const label = phone.querySelector('[data-view="coming"] .mins');
-  const totalMinutes = minutes;
-
-  const tick = (remaining) => {
-    if (remaining === 0) {
-      show(phone, 'arrived');
-      return;
+  if (!target) {
+    const pressed = button.getAttribute('aria-pressed') !== 'true';
+    button.setAttribute('aria-pressed', String(pressed));
+    if (button.classList.contains('avail')) {
+      button.querySelector('.avail-word').textContent = pressed ? 'זמין' : 'לא זמין';
     }
-    label.textContent = remaining;
-    const progress = (totalMinutes - remaining) / totalMinutes;
-    setLevel(phone, 72 + progress * 26, reduceMotion ? 0 : 1.2);
-    later(phone, 1600, () => tick(remaining - 1));
-  };
-  tick(minutes);
+    return;
+  }
+
+  if (target === 'detail') {
+    pickShift(phone, button);
+    show(phone, 'detail');
+    return;
+  }
+
+  if (target === 'apply') {
+    show(phone, 'pending');
+    later(phone, 2400, () => show(phone, phone.dataset.outcome || 'confirmed'));
+    return;
+  }
+
+  if (target === 'invite') {
+    fill(phone, '.p-name', button.closest('.person').querySelector('b').textContent.split(' ')[0]);
+    show(phone, 'poolwait');
+    later(phone, 2400, () => show(phone, 'poolok'));
+    return;
+  }
+
+  show(phone, target);
 }
 </script>
 </body>
